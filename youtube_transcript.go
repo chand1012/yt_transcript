@@ -11,8 +11,7 @@ import (
 	"math/big"
 	"net/http"
 	"regexp"
-	"strconv"
-	
+	"strconv"	
 )
 
 var reYoutube = regexp.MustCompile(`^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*`)
@@ -217,6 +216,7 @@ func GetVideoTitle(videoId string) (string, error) {
 	reTitle := regexp.MustCompile(`(?i)<title>.*?([^<>]*)</title>`)
 	titleMatch := reTitle.FindStringSubmatch(string(videoPageBody))
 	title := ""
+
 	if len(titleMatch) > 1 {
 		title = titleMatch[1]
 	}
@@ -226,5 +226,6 @@ func GetVideoTitle(videoId string) (string, error) {
 	if title == "" {
 		return "", &YoutubeTranscriptError{Message: "Failed to fetch video title"}
 	}
+	
 	return title, nil
 }
