@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"net/http"
 	"regexp"
-	"strconv"
+	"strconv"	
 )
 
 var reYoutube = regexp.MustCompile(`^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*`)
@@ -45,6 +45,7 @@ func FetchTranscript(videoID, lang, country string) ([]TranscriptResponse, strin
 }
 func (yt *ytTranscript) fetchTranscript(videoId string, config *ytConfig) ([]TranscriptResponse, string, error) {
 	identifier, err := GetVideoID(videoId)
+	
 	if err != nil {
 		return nil, "", &YoutubeTranscriptError{Message: err.Error()}
 	}
@@ -60,13 +61,14 @@ func (yt *ytTranscript) fetchTranscript(videoId string, config *ytConfig) ([]Tra
 	reTitle := regexp.MustCompile(`(?i)<title>.*?([^<>]*)</title>`)
 	titleMatch := reTitle.FindStringSubmatch(string(videoPageBody))
 	title := ""
+	
 	if len(titleMatch) > 1 {
 		title = titleMatch[1]
-	}
+	}	
 
 	// remove " - YouTube" from title
 	title = html.UnescapeString(regexp.MustCompile(`(?i)\s-\sYouTube$`).ReplaceAllString(title, ""))
-
+	
 	if len(innerTubeApiKey) > 0 {
 		client := &http.Client{}
 		reqBody, _ := json.Marshal(yt.generateReq(string(videoPageBody), config))
@@ -86,12 +88,16 @@ func (yt *ytTranscript) fetchTranscript(videoId string, config *ytConfig) ([]Tra
 			}
 
 			transcriptsRaw := body["actions"].([]interface{})[0].(map[string]interface{})["updateEngagementPanelAction"].(map[string]interface{})["content"].(map[string]interface{})["transcriptRenderer"].(map[string]interface{})["body"].(map[string]interface{})["transcriptBodyRenderer"].(map[string]interface{})["cueGroups"].([]interface{})
-
 			var transcripts []TranscriptResponse
 			for _, cue := range transcriptsRaw {
 				cueGroupRenderer := cue.(map[string]interface{})["transcriptCueGroupRenderer"].(map[string]interface{})["cues"].([]interface{})[0].(map[string]interface{})["transcriptCueRenderer"].(map[string]interface{})
 				duration, _ := strconv.Atoi(cueGroupRenderer["durationMs"].(string))
 				offset, _ := strconv.Atoi(cueGroupRenderer["startOffsetMs"].(string))
+				
+				// if there is a blank part of the transcript, skip it
+				if(cueGroupRenderer["cue"].(map[string]interface{})["simpleText"] == nil){
+					continue
+				}
 
 				transcripts = append(transcripts, TranscriptResponse{
 					Text:     cueGroupRenderer["cue"].(map[string]interface{})["simpleText"].(string),
@@ -210,16 +216,16 @@ func GetVideoTitle(videoId string) (string, error) {
 	reTitle := regexp.MustCompile(`(?i)<title>.*?([^<>]*)</title>`)
 	titleMatch := reTitle.FindStringSubmatch(string(videoPageBody))
 	title := ""
+
 	if len(titleMatch) > 1 {
 		title = titleMatch[1]
 	}
 
 	// remove " - YouTube" from title
 	title = html.UnescapeString(regexp.MustCompile(`(?i)\s-\sYouTube$`).ReplaceAllString(title, ""))
-
 	if title == "" {
 		return "", &YoutubeTranscriptError{Message: "Failed to fetch video title"}
 	}
-
+	
 	return title, nil
 }

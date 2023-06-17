@@ -33,6 +33,35 @@ func TestFetchTranscript(t *testing.T) {
 
 }
 
+func TestFetchTranscript2(t *testing.T) {
+	videoId := "Rt78MqJDozY"
+	transcripts, title, err := FetchTranscript(videoId, "en", "US")
+	if err != nil {
+		t.Errorf("FetchTranscript failed with error: %v", err)
+	}
+
+	if title == "" {
+		t.Error("FetchTranscript returned empty title")
+	}
+
+	if len(transcripts) == 0 {
+		t.Error("FetchTranscript returned empty transcripts")
+	}
+
+	for _, transcript := range transcripts {
+		if transcript.Text == "" {
+			t.Error("Transcript has empty text")
+		}
+		if transcript.Duration <= 0 {
+			t.Errorf("Transcript has invalid duration: %d", transcript.Duration)
+		}
+		if transcript.Offset < 0 {
+			t.Errorf("Transcript has invalid offset: %d", transcript.Offset)
+		}
+	}
+
+}
+
 func TestGetVideoTitle(t *testing.T) {
 	videoId := "dQw4w9WgXcQ"
 	title, err := GetVideoTitle(videoId)
